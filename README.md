@@ -14,6 +14,9 @@ FastAPI endpoint.
 3. The parsed order is validated with Pandas: missing customer names,
    empty item lists, and non-positive quantities are caught; missing
    unit prices are filled in from a small product price lookup table.
+   If an item isn't found in the lookup table either, its price is
+   marked as "Pending pricing" instead of defaulting to zero, and that
+   item is excluded from the subtotal, tax, and total calculations.
 4. A PDF invoice is generated with ReportLab, including an itemized
    table, subtotal, tax, and total.
 5. The invoice is emailed to the customer as a PDF attachment via Gmail
@@ -152,7 +155,10 @@ curl -X POST http://127.0.0.1:8000/generate-invoice \
 {
   "status": "completed",
   "invoice_path": "invoices/invoice_John_Carter_2026-07-17.pdf",
-  "warnings": ["Item 'bracket' had no unit price; filled in $3.25 from product lookup."],
+  "warnings": [
+    "Item 'bracket' had no unit price; filled in $3.25 from product lookup.",
+    "Item 'widget-x' has no matching price in the lookup table, manual pricing required"
+  ],
   "email_result": {
     "status": "sent",
     "timestamp": "2026-07-17T12:34:56.789+00:00",
@@ -197,6 +203,13 @@ jupyter notebook notebooks/demo.ipynb
   dictionary of ~10 products and prices, used only to fill in missing
   unit prices the LLM didn't find in the order text. A production
   system would query a real product catalog or pricing database instead.
+
+## Technology Decision: Email over WhatsApp
+
+Invoice delivery uses email (SMTP) rather than the WhatsApp Business
+API. The task listed WhatsApp/Twilio as applicable where relevant
+rather than mandatory, and email offered reliable, testable delivery
+without requiring third-party sandbox setup.
 
 ## What this prototype intentionally does not do
 
